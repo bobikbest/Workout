@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мои тренировки</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1b2a;color:#f0ece2;min-height:100vh}
+
+nav{display:flex;background:#0a1520;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;z-index:50}
+.nav-btn{flex:1;padding:14px 8px;background:none;border:none;color:#a8a49c;font-family:inherit;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.04em}
+.nav-btn.active{color:#22a06b;border-bottom-color:#22a06b}
+.nav-btn:hover:not(.active){color:#f0ece2}
+
+.page{display:none;padding:20px 16px 100px}
+.page.active{display:block}
+
+.day-card{background:#162032;border:1px solid rgba(255,255,255,0.07);border-radius:8px;margin-bottom:16px;overflow:hidden}
+.day-head{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;border-left:3px solid #22a06b;user-select:none}
+.day-title{font-size:18px;font-weight:700;letter-spacing:.05em;color:#f0ece2}
+.day-focus{font-size:10px;color:#22a06b;letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
+.day-arrow{color:#a8a49c;font-size:18px;transition:transform .25s;display:inline-block}
+.day-card.open .day-arrow{transform:rotate(180deg)}
+.day-body{display:none;padding:0 0 8px}
+.day-card.open .day-body{display:block}
+
+.ex-row{display:flex;align-items:flex-start;gap:12px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.ex-row:last-child{border-bottom:none}
+.ex-img{width:64px;height:64px;border-radius:6px;object-fit:cover;flex-shrink:0;background:#1e2e42}
+.ex-emoji{width:64px;height:64px;border-radius:6px;flex-shrink:0;background:#1e2e42;display:flex;align-items:center;justify-content:center;font-size:26px}
+.ex-info{flex:1;min-width:0}
+.ex-name{font-size:13px;color:#f0ece2;line-height:1.4;margin-bottom:6px}
+.ex-sub{font-size:10px;color:#a8a49c}
+.ex-fields{display:flex;gap:8px;align-items:flex-end}
+.field-wrap{display:flex;flex-direction:column;gap:3px}
+.field-lbl{font-size:9px;color:#a8a49c;letter-spacing:.12em;text-transform:uppercase}
+.field-in{background:#1e2e42;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#f0ece2;font-family:inherit;font-size:14px;font-weight:600;text-align:center;width:72px;padding:6px 4px;outline:none;transition:border-color .2s,box-shadow .2s}
+.field-in:focus{border-color:#22a06b;box-shadow:0 0 0 2px rgba(34,160,107,.2)}
+.field-in::placeholder{color:rgba(168,164,156,.3)}
+
+.rec-page-title{font-size:24px;font-weight:700;letter-spacing:.06em;margin-bottom:4px}
+.rec-subtitle{font-size:11px;color:#a8a49c;letter-spacing:.15em;text-transform:uppercase;margin-bottom:24px}
+.rec-card{background:#162032;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:20px;margin-bottom:16px}
+.rec-lift-name{font-size:20px;font-weight:700;margin-bottom:4px}
+.rec-lift-sub{font-size:10px;color:#22a06b;letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px}
+.rec-img{width:100%;height:150px;object-fit:cover;border-radius:6px;margin-bottom:16px}
+.rec-emoji{width:100%;height:150px;border-radius:6px;margin-bottom:16px;background:#1e2e42;display:flex;align-items:center;justify-content:center;font-size:64px}
+.rec-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.rec-label{font-size:13px;color:#a8a49c;flex:1}
+.rec-inp{background:#1e2e42;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#f0ece2;font-family:inherit;font-size:20px;font-weight:700;text-align:center;width:90px;padding:8px;outline:none;transition:border-color .2s,box-shadow .2s}
+.rec-inp:focus{border-color:#22a06b;box-shadow:0 0 0 2px rgba(34,160,107,.2)}
+.rec-unit{font-size:13px;color:#a8a49c;width:24px}
+.rec-badge{display:inline-block;background:rgba(34,160,107,.15);color:#22a06b;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;border:1px solid rgba(34,160,107,.3);letter-spacing:.06em;margin-top:4px}
+
+.save-bar{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(to top,#0d1b2a 75%,transparent);padding:14px 16px;display:flex;gap:12px;align-items:center;justify-content:center;z-index:40}
+.btn-save{background:#1a6b4a;border:1px solid #22a06b;color:#f0ece2;font-family:inherit;font-size:15px;font-weight:700;padding:12px 44px;border-radius:6px;cursor:pointer;letter-spacing:.1em;transition:background .2s,transform .1s}
+.btn-save:hover{background:#22a06b}
+.btn-save:active{transform:scale(.97)}
+.saved-msg{font-size:13px;color:#22a06b;letter-spacing:.1em;opacity:0;transition:opacity .4s}
+.saved-msg.show{opacity:1}
+
+.week-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#0a1520;border-bottom:1px solid rgba(255,255,255,0.06);overflow-x:auto;flex-wrap:nowrap}
+.week-lbl{font-size:10px;color:#a8a49c;letter-spacing:.15em;text-transform:uppercase;flex-shrink:0}
+.week-nav{background:none;border:none;color:#a8a49c;font-size:20px;cursor:pointer;padding:2px 6px;flex-shrink:0}
+.week-nav:hover{color:#22a06b}
+.week-cur{font-size:15px;font-weight:700;color:#f0ece2;min-width:90px;text-align:center;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<nav>
+  <button class="nav-btn active" id="nav-plan" onclick="showPage('plan')">📋 ПЛАН</button>
+  <button class="nav-btn" id="nav-records" onclick="showPage('records')">🏆 РЕКОРДЫ</button>
+</nav>
+
+<div class="week-bar">
+  <span class="week-lbl">Неделя</span>
+  <button class="week-nav" onclick="changeWeek(-1)">‹</button>
+  <div class="week-cur" id="week-cur"></div>
+  <button class="week-nav" onclick="changeWeek(1)">›</button>
+</div>
+
+<div id="page-plan" class="page active"></div>
+<div id="page-records" class="page"></div>
+
+<div class="save-bar">
+  <button class="btn-save" onclick="saveAll()">СОХРАНИТЬ</button>
+  <span class="saved-msg" id="saved-msg">✓ Сохранено</span>
+</div>
+
+<script>
+const DAYS = [
+  {
+    id:'mon', title:'ПОНЕДЕЛЬНИК', focus:'Плечи',
+    exercises:[
+      {id:'m1', name:'Подъём штанги перед собой', sub:'Передняя дельта', emoji:'🏋️',
+       img:'https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=200&q=60'},
+      {id:'m2', name:'Махи гантелями в стороны', sub:'Средняя дельта', emoji:'💪',
+       img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=200&q=60'},
+    ]
+  },
+  {
+    id:'tue', title:'ВТОРНИК', focus:'Кардио',
+    exercises:[
+      {id:'t1', name:'Кардио-сессия', sub:'', emoji:'🏃',
+       img:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&q=60'},
+    ]
+  },
+  {
+    id:'wed', title:'СРЕДА', focus:'Ноги',
+    exercises:[
+      {id:'w1', name:'Жим в Гакк-машине', sub:'Квадрицепс', emoji:'🦵',
+       img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=200&q=60'},
+      {id:'w2', name:'Жим ногами — низкая постановка стоп', sub:'Квадрицепс', emoji:'🦵',
+       img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=200&q=60'},
+      {id:'w3', name:'Жим ногами — высокая постановка стоп', sub:'Бицепс бедра / Ягодицы', emoji:'🦵',
+       img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=200&q=60'},
+      {id:'w4', name:'Выпады', sub:'Ноги / Ягодицы', emoji:'🚶',
+       img:'https://images.unsplash.com/photo-1597452485669-2c7bb5fef90d?w=200&q=60'},
+      {id:'w5', name:'Разгибания ног в тренажёре', sub:'Квадрицепс', emoji:'🦵',
+       img:'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=200&q=60'},
+      {id:'w6', name:'Сгибания ног в тренажёре', sub:'Бицепс бедра', emoji:'🦵',
+       img:'https://images.unsplash.com/photo-1590487988256-9ed24133863e?w=200&q=60'},
+      {id:'w7', name:'Махи гантелями в стороны', sub:'Средняя дельта', emoji:'💪',
+       img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=200&q=60'},
+    ]
+  },
+  {
+    id:'fri', title:'ПЯТНИЦА', focus:'Спина / Трицепс / Задняя дельта',
+    exercises:[
+      {id:'f1', name:'Тяга гантелей в наклоне (грудь на скамье)', sub:'Широчайшие', emoji:'🏋️',
+       img:'https://images.unsplash.com/photo-1605296867424-35fc25c9212a?w=200&q=60'},
+      {id:'f2', name:'Тяга нижнего блока (поочерёдно)', sub:'Широчайшие', emoji:'🏋️',
+       img:'https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=200&q=60'},
+      {id:'f3', name:'Французский жим', sub:'Трицепс', emoji:'💪',
+       img:'https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?w=200&q=60'},
+      {id:'f4', name:'Разгибания на трицепс в кроссовере', sub:'Трицепс', emoji:'💪',
+       img:'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=200&q=60'},
+      {id:'f5', name:'Разведения рук в «Бабочке»', sub:'Задняя дельта', emoji:'🦋',
+       img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=200&q=60'},
+      {id:'f6', name:'Махи гантелями в стороны', sub:'Средняя дельта', emoji:'💪',
+       img:'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=200&q=60'},
+    ]
+  },
+  {
+    id:'sun', title:'ВОСКРЕСЕНЬЕ', focus:'Кардио',
+    exercises:[
+      {id:'s1', name:'Кардио-сессия', sub:'', emoji:'🏃',
+       img:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&q=60'},
+    ]
+  },
+];
+
+const RECORDS = [
+  {id:'bench', name:'Жим лёжа', sub:'Грудь / Трицепс', emoji:'🏋️',
+   img:'https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?w=600&q=70'},
+  {id:'squat', name:'Приседание', sub:'Ноги / Ягодицы', emoji:'🦵',
+   img:'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&q=70'},
+  {id:'deadlift', name:'Становая тяга', sub:'Спина / Ноги', emoji:'⚡',
+   img:'https://images.unsplash.com/photo-1605296867424-35fc25c9212a?w=600&q=70'},
+];
+
+// --- Week logic ---
+let weekOffset = 0;
+
+function getWeekKey(offset) {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(d);
+  mon.setDate(diff + offset * 7);
+  return 'wk_' + mon.getFullYear() + '_' + mon.getMonth() + '_' + mon.getDate();
+}
+
+function getWeekLabel(offset) {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(d);
+  mon.setDate(diff + offset * 7);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  const fmt = dt => dt.getDate() + '.' + String(dt.getMonth()+1).padStart(2,'0');
+  return fmt(mon) + ' – ' + fmt(sun);
+}
+
+function changeWeek(dir) {
+  collectInputs();
+  weekOffset += dir;
+  updateWeekDisplay();
+  fillInputs();
+}
+
+function updateWeekDisplay() {
+  document.getElementById('week-cur').textContent = getWeekLabel(weekOffset);
+}
+
+// --- State ---
+let allData = {}; // { weekKey: { exId: {sets,weight} } }
+let recState = {};
+
+function loadState() {
+  try {
+    const a = localStorage.getItem('wt_all');
+    if (a) allData = JSON.parse(a);
+    const r = localStorage.getItem('wt_rec');
+    if (r) recState = JSON.parse(r);
+  } catch(e) {}
+}
+
+function collectInputs() {
+  const key = getWeekKey(weekOffset);
+  if (!allData[key]) allData[key] = {};
+  document.querySelectorAll('.ex-sets').forEach(el => {
+    const id = el.dataset.exid;
+    if (!allData[key][id]) allData[key][id] = {sets:'',weight:''};
+    allData[key][id].sets = el.value;
+  });
+  document.querySelectorAll('.ex-weight').forEach(el => {
+    const id = el.dataset.exid;
+    if (!allData[key][id]) allData[key][id] = {sets:'',weight:''};
+    allData[key][id].weight = el.value;
+  });
+}
+
+function fillInputs() {
+  const key = getWeekKey(weekOffset);
+  const weekData = allData[key] || {};
+  document.querySelectorAll('.ex-sets').forEach(el => {
+    el.value = (weekData[el.dataset.exid] || {}).sets || '';
+  });
+  document.querySelectorAll('.ex-weight').forEach(el => {
+    el.value = (weekData[el.dataset.exid] || {}).weight || '';
+  });
+}
+
+function saveAll() {
+  collectInputs();
+  document.querySelectorAll('.rec-weight-in').forEach(el => {
+    const id = el.dataset.recid;
+    if (!recState[id]) recState[id] = {weight:'',reps:''};
+    recState[id].weight = el.value;
+    // update badge
+    const repsEl = document.querySelector('.rec-reps-in[data-recid="'+id+'"]');
+    if (repsEl) recState[id].reps = repsEl.value;
+    updateBadge(id);
+  });
+  try {
+    localStorage.setItem('wt_all', JSON.stringify(allData));
+    localStorage.setItem('wt_rec', JSON.stringify(recState));
+  } catch(e) {}
+  const msg = document.getElementById('saved-msg');
+  msg.classList.add('show');
+  setTimeout(() => msg.classList.remove('show'), 2000);
+}
+
+function updateBadge(id) {
+  const r = recState[id] || {};
+  const w = parseFloat(r.weight) || 0;
+  const reps = parseFloat(r.reps) || 1;
+  const badge = document.getElementById('badge-'+id);
+  if (badge) {
+    if (w > 0) {
+      badge.textContent = '1ПМ ≈ ' + Math.round(w * (1 + reps/30)) + ' кг';
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+// --- Render ---
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+}
+
+function toggleDay(id) {
+  document.getElementById('day-'+id).classList.toggle('open');
+}
+
+function renderPlan() {
+  const c = document.getElementById('page-plan');
+  c.innerHTML = DAYS.map(day => {
+    const rows = day.exercises.map(ex => `
+      <div class="ex-row">
+        <img src="${ex.img}" class="ex-img" alt="${ex.name}"
+          onerror="this.style.display='none';document.getElementById('em-${ex.id}').style.display='flex'">
+        <div class="ex-emoji" id="em-${ex.id}" style="display:none">${ex.emoji}</div>
+        <div class="ex-info">
+          <div class="ex-name">${ex.name}${ex.sub ? ' <span class="ex-sub">· '+ex.sub+'</span>' : ''}</div>
+          <div class="ex-fields">
+            <div class="field-wrap">
+              <span class="field-lbl">Подходы</span>
+              <input class="field-in ex-sets" data-exid="${ex.id}" type="text" placeholder="3×10">
+            </div>
+            <div class="field-wrap">
+              <span class="field-lbl">РВ кг</span>
+              <input class="field-in ex-weight" data-exid="${ex.id}" type="number" placeholder="0">
+            </div>
+          </div>
+        </div>
+      </div>`).join('');
+
+    return `<div class="day-card" id="day-${day.id}">
+      <div class="day-head" onclick="toggleDay('${day.id}')">
+        <div>
+          <div class="day-title">${day.title}</div>
+          <div class="day-focus">${day.focus}</div>
+        </div>
+        <span class="day-arrow">▾</span>
+      </div>
+      <div class="day-body">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderRecords() {
+  const c = document.getElementById('page-records');
+  c.innerHTML = `<div class="rec-page-title">Рекорды</div>
+  <div class="rec-subtitle">Личные максимумы</div>
+  ${RECORDS.map(rec => {
+    const r = recState[rec.id] || {};
+    const w = parseFloat(r.weight) || 0;
+    const reps = parseFloat(r.reps) || 1;
+    const prm = w > 0 ? Math.round(w * (1 + reps/30)) : 0;
+    return `<div class="rec-card">
+      <div class="rec-lift-name">${rec.name}</div>
+      <div class="rec-lift-sub">${rec.sub}</div>
+      <img src="${rec.img}" class="rec-img" alt="${rec.name}"
+        onerror="this.style.display='none';document.getElementById('rem-${rec.id}').style.display='flex'">
+      <div class="rec-emoji" id="rem-${rec.id}" style="display:none">${rec.emoji}</div>
+      <div class="rec-row">
+        <span class="rec-label">Рабочий вес</span>
+        <input class="rec-inp rec-weight-in" data-recid="${rec.id}" type="number" placeholder="0" value="${r.weight||''}" oninput="recState['${rec.id}']=(recState['${rec.id}']||{});recState['${rec.id}'].weight=this.value;updateBadge('${rec.id}')">
+        <span class="rec-unit">кг</span>
+      </div>
+      <div class="rec-row">
+        <span class="rec-label">Повторения</span>
+        <input class="rec-inp rec-reps-in" data-recid="${rec.id}" type="number" placeholder="1" value="${r.reps||''}" oninput="recState['${rec.id}']=(recState['${rec.id}']||{});recState['${rec.id}'].reps=this.value;updateBadge('${rec.id}')">
+        <span class="rec-unit">раз</span>
+      </div>
+      <span class="rec-badge" id="badge-${rec.id}" style="${prm>0?'':'display:none'}">${prm>0?'1ПМ ≈ '+prm+' кг':''}</span>
+    </div>`;
+  }).join('')}`;
+}
+
+// --- Init ---
+loadState();
+renderPlan();
+renderRecords();
+updateWeekDisplay();
+fillInputs();
+document.getElementById('day-mon').classList.add('open');
+</script>
+</body>
+</html>
